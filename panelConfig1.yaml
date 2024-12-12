@@ -1,0 +1,166 @@
+---
+
+#------------------------------------------------------------------------------
+# YAML Anchors and Aliases simplify maintenance. This is an example of an anchor
+# for a link. The corresponding alias would look like:
+#   link: *grafana-home
+
+anchorLinks:
+  - link: &grafana-home
+      url: "https://grafana.com/"
+      params: "time"
+
+#------------------------------------------------------------------------------
+# Test Settings
+
+# Version 1.6.0 onwards: This section details test settings used in validating the functionality.
+# They provide a way to drive particular code pathways.
+test:
+  # This changes the test timeSeries to be sparse and is used as a way to demonstrate the
+  # difference between datapoint 'last' and 'lastNotNull'. Undefined defaults to false.
+  testDataSparse: false
+
+  # Version 1.11.0 onwards: By default the base offset on the curves is 1 so they travel from
+  # 0 to 2. By shifting it to 0 you can have a range of -1 to +1 to test negative data.
+  testDataBaseOffset: 0
+
+  # Version 1.11.0 onwards: When set you get an extended set of datapoints around zero to facilitate
+  # testing in this region.
+  testDataExtendedZero: false
+
+  # Version 1.12.0 onwards: When set test data values are extended with a string-data timeseries.
+  testDataStringData: false
+
+  # Version 1.16.0 onwards: When set test the data values are extended with a 'no-time' timeseries.
+  testDataNoTime: false
+
+#------------------------------------------------------------------------------
+# Version 1.14.0 onwards: The zoomPanPinch yaml provides customization of the zoom-pan-pinch
+# behavior. It can be defined in either panelConfig or siteConfig.
+zoomPanPinch:
+  # This optional term defines the array of keys that can be used to enable wheel zoom. There's
+  # a clash of interest between panel zoom and dashboard scrolling which is easy to avoid with small
+  # SVGs, but becomes more problematic when the SVG is large and covers a lot of the screen. By
+  # requiring a combo such as ALT+Scroll this clash can be avoided. 
+  wheelActivationKeys: ["Alt"]
+
+#------------------------------------------------------------------------------
+# Version 1.14.0 onwards: This section defines panel level defaults for the link window
+linkWindow:
+  # Default for '<cell>.link.sameTab'.
+  sameTab: true
+
+# Version 1.14.0 onwards: Link variables will be substituted in urls prior to passing through
+# grafana variable substitution. Variables should be defined in the same format as grafana variables.
+# i.e. ${urlBasePlugin}. These variables can be defined in siteConfig or panelConfig.
+# Alongside these bespoke variables there are two reserved variables driven from the cell yaml of:
+# ${cell.name}
+# ${cell.dataRef}
+# Substitution order is: reserved-vars -> siteConfig-vars -> panelConfig-vars -> grafana-vars
+linkVariables:
+  urlBasePlugin: "https://github.com/andymchugh/andrewbmchugh-flow-panel/blob/main/"
+  urlBaseGrafana: "https://app.diagrams.net/"
+
+#------------------------------------------------------------------------------
+# Grafana Variable Scalars
+
+# These scalars allow the grafana variable selections to impact the threshold values
+# used in the panel. Each grafana variable has an array of rules where a rule applies
+# to a subset of cells as defined by the cellIdPatternScope.
+#
+# At initialization the rule set for each cell is determined. Then at render time the first
+# rule on a cell to match the variable value results in that scalar being applied. The scalars
+# are accumulative across variables, but only the first rule match for a given variable will
+# be applied.
+variableThresholdScalars:
+  system:
+    - {variableValuePattern: ".*client.*", thresholdScalar: 2, cellIdPatternScope: [".*box.*"]}
+  environment:
+    - {variableValuePattern: "dev", thresholdScalar: 0.2, cellIdPatternScope: ["inbox_depth"]}
+
+#------------------------------------------------------------------------------
+# Highlighting
+
+# Version 1.6.0 onwards: The Highlighter legend, when enabled in the panel options, uses this
+# configuration to display the legend and highlight/lowlight the readouts based off of selection.
+# Only legend tags that also exist on cell definitions will be selectable. As such you can add
+# legend entries that are purely descriptive to make the tags understandable by a wider audience.
+#
+# This configuration works in tandem with cell level configuration. On each cell a tag array can
+# be defined allowing a cell to be highlighted in multiple dimensions.
+
+tagConfig:
+  # The legend will be displayed when the Highlighter is enabled in the panel options. The array entries
+  # should be either 'tags' defined on cells or descriptive text or separators. If not defined a legend
+  # will be deduced from the cells tags arrays.
+  legend: ["Queue Technology:", "rabbitMQ", "kafka", "|", "Flow Attribs:", "inflow", "depth", "|"]
+
+  # This defines the legend color to apply to the tag when the tag is selected. If not defined
+  # it defaults to yellow.
+  color: "yellow"
+  
+  # This defines the rgb factor to apply to a readouts color when the readout is highlighted. Note the
+  # rgb ratios are always maintained so this will result in this factor being capped. If not defined
+  # it defaults to 5.0.
+  highlightRgbFactor: 5.0
+
+  # This defines the alpha factor to apply to a readout when other readouts are highlighted.
+  # i.e. selections get highlighted. non-selections get lowlighted. If not defined it defaults to 0.3.
+  lowlightAlphaFactor: 0.3
+
+  # Version 1.7.0 onwards: When set this flag uses a thinner footprint for the combined highlighter
+  # and timeSlider. Enable when vertical space is at a premium. Default when undefined is false.
+  condensed: false
+
+#------------------------------------------------------------------------------
+# Panel Config
+
+# Version 1.6.0 onwards: When undefined the background color is not driven. When defined the color for
+# the current theme is used. Colors can be entered in all the normal ways of name, hex, hsl, etc.
+background:
+  darkThemeColor: "yellow"
+  lightThemeColor: "green"
+
+# Version 1.6.0 onwards: This defines which datapoint will be chosen from the time-series.
+# If your datasource supports graphite functions 'keepLastValue' and 'transformNull', using those
+# functions in combination with 'last' gives the most precise control. If you don't have them available,
+# 'lastNotNull' allows you to approximate it. With 'last' the closest datapoint based off the timeSlider
+# position is chosen. With 'lastNotNull', that datapoint is then walked back in time until a non-null value
+# is found.
+#
+# This is the panel level default which when undefined defaults to 'last'. It can be overriden at the cell
+# level and the cell-attribute level.
+#
+# Valid values are undefined, "last", "lastNotNull"
+datapoint: "last"
+
+# This defines the default color gradientMode. It defines the default value on cell labelColor.gradientMode
+# and fillColor.gradientMode for when the field is undefined. Values are "hue" and "none" with
+# "none" being the default when undefined.
+gradientMode: "hue"
+
+# This defines the preamble that will be added to every svg ID listed under 'cells'.
+# It can be an empty string, which is the default value. DrawIO at the moment adds a non-configurable
+# 'cell-' as shown here.
+cellIdPreamble: "cell-"
+
+# During initialization all inner cells that are id-free are assigned a new ID based off the
+# parent ID. By default they will be given the id <original-id><cellIdExtender><increasing-number>
+# where cellIdExtender will default if unset to "@flowrpt". If for any reason that causes your SVG ID
+# clashes you can change the cellIdExtender value. But normally it's just left unset.
+cellIdExtender: "@flowrpt"
+
+# This is the default label decimalPoints setting that will be used if no override exists at the
+# cell level. 'null' represents grafana's 'auto' mode. It will default to 0 if left undefined.
+# This panel level override is added after version 1.4.0. In earlier versions the auto mode is not
+# achievable.
+cellLabelDecimalPoints: null
+
+# This defines the set of cells that are going to be driven
+cells: 
+  # Each field name is the svg ID. i.e. within config this cell will be identifed as
+  # 'inbox_depth'. Within the actual svg the id will be the same name prepended with cellIdPreamble,
+  # e.g. 'cell-inbox_depth'.
+  landis64:
+    url: "http://10.24.139.22:3000/d/ee4isw93b8qo0d/straznikmocy-landis64?orgId=1&refresh=10s"
+    sameTab: true
